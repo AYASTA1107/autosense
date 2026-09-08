@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoSense — AI Vehicle Diagnosis Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-900:#0d1230;
+    --navy-800:#141a3f;
+    --navy-700:#1c2452;
+    --teal-500:#2fdba3;
+    --teal-600:#1fb98a;
+    --bg:#f2f4fa;
+    --card:#ffffff;
+    --ink:#181c34;
+    --muted:#666f8c;
+    --line:#e3e6f0;
+    --danger:#e4614f;
+    --danger-bg:#fdeeec;
+    --warn:#e79a2e;
+    --warn-bg:#fdf2e2;
+    --safe-bg:#e7faf3;
+    --radius:16px;
+    --shadow:0 18px 40px -22px rgba(13,18,48,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;}
+  button{font-family:inherit;cursor:pointer;}
+  input,textarea{font-family:inherit;}
+  ::selection{background:var(--teal-500);color:var(--navy-900);}
+
+  /* ---------- Shell ---------- */
+  .app{max-width:900px;margin:0 auto;min-height:100vh;background:var(--bg);}
+  header.top{
+    background:var(--navy-900);color:#fff;padding:26px 32px 22px;
+    position:sticky;top:0;z-index:20;
+  }
+  .brandrow{display:flex;align-items:center;gap:10px;}
+  .brandmark{width:34px;height:34px;border-radius:9px;background:var(--teal-500);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brandmark svg{width:19px;height:19px;}
+  .brandrow .name{font-family:'Fraunces',serif;font-weight:600;font-size:1.28rem;letter-spacing:0.2px;}
+  .brandrow .tag{color:#9aa3c7;font-size:0.8rem;margin-top:1px;}
+
+  .stepper{display:flex;gap:4px;margin-top:20px;}
+  .stepper .seg{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,0.14);overflow:hidden;}
+  .stepper .seg i{display:block;height:100%;width:0%;background:var(--teal-500);transition:width .5s ease;}
+  .steplabel{margin-top:9px;font-size:.78rem;color:#9aa3c7;}
+  .steplabel b{color:#e7eaff;font-weight:600;}
+
+  main{padding:30px 32px 70px;}
+  .screen{display:none;animation:fade .35s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .eyebrow{color:var(--teal-600);font-weight:600;font-size:.82rem;}
+  h1.title{font-size:2rem;line-height:1.15;margin:6px 0 8px;font-weight:600;}
+  p.lede{color:var(--muted);font-size:1rem;line-height:1.55;margin:0 0 26px;max-width:56ch;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+  label{display:block;font-size:.83rem;font-weight:600;color:var(--navy-800);margin-bottom:6px;}
+  .field{margin-bottom:18px;}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;padding:12px 13px;border:1.5px solid var(--line);border-radius:10px;
+    font-size:.95rem;color:var(--ink);background:#fbfcfe;transition:border-color .15s;
+  }
+  textarea{resize:vertical;min-height:96px;line-height:1.5;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal-500);background:#fff;}
+
+  .btnrow{display:flex;gap:12px;margin-top:28px;}
+  .btn{border:none;border-radius:11px;padding:13px 22px;font-weight:600;font-size:.94rem;display:inline-flex;align-items:center;gap:8px;transition:transform .12s, box-shadow .12s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy-900);color:#fff;}
+  .btn-primary:hover{box-shadow:0 10px 22px -10px rgba(13,18,48,0.55);}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+  .btn-ghost{background:transparent;color:var(--navy-800);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--navy-800);}
+  .btn-teal{background:var(--teal-500);color:var(--navy-900);}
+  .btn-teal:hover{background:var(--teal-600);}
+
+  /* Upload tiles */
+  .uploadgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media(max-width:640px){.uploadgrid{grid-template-columns:1fr;}}
+  .uploadtile{border:1.5px dashed var(--line);border-radius:14px;padding:20px;text-align:center;background:#fbfcfe;transition:border-color .15s, background .15s;position:relative;}
+  .uploadtile.filled{border-style:solid;border-color:var(--teal-500);background:var(--safe-bg);}
+  .uploadtile input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .uploadtile .ic{width:40px;height:40px;border-radius:50%;background:var(--navy-900);color:var(--teal-500);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+  .uploadtile .ic svg{width:19px;height:19px;}
+  .uploadtile .lbl{font-weight:600;font-size:.9rem;}
+  .uploadtile .sub{color:var(--muted);font-size:.78rem;margin-top:3px;}
+  .uploadtile .filename{font-size:.78rem;color:var(--teal-600);font-weight:600;margin-top:5px;word-break:break-all;}
+
+  /* Analyzing screen */
+  .analyzewrap{text-align:center;padding:50px 10px 10px;}
+  .ai-icons{display:flex;justify-content:center;gap:18px;margin:34px 0 30px;}
+  .ai-icons .aiic{width:60px;height:60px;border-radius:16px;background:var(--card);border:1.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);opacity:.35;transition:opacity .3s, transform .3s;}
+  .ai-icons .aiic.on{opacity:1;transform:translateY(-4px);border-color:var(--teal-500);}
+  .ai-icons .aiic svg{width:24px;height:24px;color:var(--navy-900);}
+  .progressbar{height:6px;border-radius:4px;background:var(--line);max-width:340px;margin:0 auto;overflow:hidden;}
+  .progressbar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--teal-600),var(--teal-500));transition:width .25s linear;}
+  .analyzestatus{margin-top:14px;color:var(--muted);font-size:.88rem;min-height:1.3em;}
+
+  /* Diagnosis result */
+  .resulthead{background:var(--navy-900);border-radius:var(--radius);padding:24px 26px;color:#fff;margin-bottom:18px;}
+  .resulthead .veh{color:#9aa3c7;font-size:.82rem;margin-bottom:6px;}
+  .resulthead .cause{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;line-height:1.25;}
+  .badgerow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .badge{padding:6px 12px;border-radius:20px;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .badge.high{background:var(--danger-bg);color:var(--danger);}
+  .badge.medium{background:var(--warn-bg);color:var(--warn);}
+  .badge.low{background:var(--safe-bg);color:var(--teal-600);}
+  .badge.dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  .resultgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  @media(max-width:640px){.resultgrid{grid-template-columns:1fr;}}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .stat .k{color:var(--muted);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;}
+  .confwrap{display:flex;align-items:center;gap:12px;}
+  .confbar{flex:1;height:9px;border-radius:6px;background:var(--line);overflow:hidden;}
+  .confbar i{display:block;height:100%;background:var(--teal-500);border-radius:6px;width:0%;transition:width 1s cubic-bezier(.2,.9,.3,1);}
+  .confnum{font-weight:700;font-size:1.05rem;}
+  .costnum{font-family:'Fraunces',serif;font-weight:600;font-size:1.2rem;}
+  .complist{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:.82rem;}
+
+  .note{background:var(--safe-bg);border:1px solid #cdf1e2;border-radius:12px;padding:13px 16px;font-size:.85rem;color:var(--navy-800);margin-top:4px;}
+
+  /* Mechanic list */
+  .mech{display:flex;gap:14px;align-items:flex-start;padding:16px 4px;border-bottom:1px solid var(--line);}
+  .mech:last-child{border-bottom:none;}
+  .mech .av{width:46px;height:46px;border-radius:12px;background:var(--navy-900);color:var(--teal-500);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Fraunces',serif;flex-shrink:0;}
+  .mech .info{flex:1;}
+  .mech .name{font-weight:600;font-size:.97rem;}
+  .mech .meta{color:var(--muted);font-size:.8rem;margin-top:2px;}
+  .mech .tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .mech .tag{font-size:.72rem;background:var(--bg);border-radius:20px;padding:3px 9px;color:var(--navy-800);}
+  .mech .cta{align-self:center;}
+
+  /* History */
+  .timeline{position:relative;padding-left:26px;}
+  .timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--line);}
+  .tlitem{position:relative;padding-bottom:22px;}
+  .tlitem:last-child{padding-bottom:0;}
+  .tlitem::before{content:"";position:absolute;left:-26px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--teal-500);border:3px solid var(--bg);}
+  .tlitem .d{font-size:.76rem;color:var(--muted);font-weight:600;}
+  .tlitem .t{font-weight:600;margin:2px 0 3px;}
+  .tlitem .s{font-size:.84rem;color:var(--muted);}
+
+  .reminder{display:flex;gap:14px;align-items:center;background:var(--navy-900);color:#fff;border-radius:14px;padding:18px 20px;margin-top:18px;}
+  .reminder .bell{width:38px;height:38px;border-radius:10px;background:var(--teal-500);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .reminder .bell svg{width:18px;height:18px;color:var(--navy-900);}
+  .reminder .txt b{display:block;font-size:.92rem;}
+  .reminder .txt span{color:#9aa3c7;font-size:.8rem;}
+
+  .disclaimer{text-align:center;color:var(--muted);font-size:.78rem;margin-top:34px;}
+  .prototypebadge{position:fixed;bottom:16px;right:16px;background:var(--navy-900);color:#9aa3c7;font-size:.72rem;
+    padding:7px 12px;border-radius:20px;box-shadow:var(--shadow);z-index:30;}
+  .prototypebadge b{color:var(--teal-500);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brandrow">
+      <div class="brandmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0d1230" stroke-width="2"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="2" y="13" width="20" height="6" rx="2"/><circle cx="7" cy="19" r="1.6" fill="#0d1230"/><circle cx="17" cy="19" r="1.6" fill="#0d1230"/></svg>
+      </div>
+      <div>
+        <div class="name">AutoSense</div>
+        <div class="tag">Diagnose. Remember. Find help.</div>
+      </div>
+    </div>
+    <div class="stepper" id="stepper"></div>
+    <div class="steplabel">Step <b id="stepNum">1</b> of 6 — <span id="stepName">Vehicle details</span></div>
+  </header>
+
+  <main>
+
+    <!-- STEP 1: Vehicle details -->
+    <section class="screen active" id="s1">
+      <div class="eyebrow">GET STARTED</div>
+      <h1 class="title">Tell us about your vehicle</h1>
+      <p class="lede">A few details help AutoSense narrow down likely causes and match them against your service history.</p>
+      <div class="card">
+        <div class="grid2">
+          <div class="field"><label>Make</label><input type="text" id="vMake" placeholder="e.g. Honda"></div>
+          <div class="field"><label>Model</label><input type="text" id="vModel" placeholder="e.g. City"></div>
+          <div class="field"><label>Year</label><input type="number" id="vYear" placeholder="e.g. 2019"></div>
+          <div class="field"><label>Odometer (km)</label><input type="number" id="vKm" placeholder="e.g. 42000"></div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Fuel type</label>
+          <select id="vFuel"><option>Petrol</option><option>Diesel</option><option>CNG</option><option>Electric</option></select>
+        </div>
+      </div>
+      <div class="btnrow"><button class="btn btn-primary" onclick="goStep(2)">Continue →</button></div>
+    </section>
+
+    <!-- STEP 2: Symptom input -->
+    <section class="screen" id="s2">
+      <div class="eyebrow">DESCRIBE THE PROBLEM</div>
+      <h1 class="title">What's going on with the car?</h1>
+      <p class="lede">Add as many inputs as you can — image, sound, and description together give AutoSense the clearest picture.</p>
+
+      <div class="uploadgrid">
+        <div class="uploadtile" id="imgTile">
+          <input type="file" accept="image/*" onchange="handleFile(this,'imgTile','imgName')">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg></div>
+          <div class="lbl">Upload a photo</div>
+          <div class="sub">Damage, leak, warning light</div>
+          <div class="filename" id="imgName"></div>
+        </div>
+        <div class="uploadtile" id="sndTile">
+          <input type="file" accept="audio/*" onchange="handleFile(this,'sndTile','sndName')">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0M12 19v3"/></svg></div>
+          <div class="lbl">Record / upload a sound</div>
+          <div class="sub">Squeal, knock, grind, hum</div>
+          <div class="filename" id="sndName"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Describe the symptom</label>
+        <textarea id="vSymptom" placeholder="e.g. Squealing sound from the front wheels when I brake, started this week"></textarea>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" id="toAnalyze" onclick="startAnalysis()">Run diagnosis →</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: Analyzing -->
+    <section class="screen" id="s3">
+      <div class="analyzewrap">
+        <div class="eyebrow">AI ENGINE</div>
+        <h1 class="title">Reading the evidence</h1>
+        <div class="ai-icons">
+          <div class="aiic" id="ai1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg></div>
+          <div class="aiic" id="ai2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h3l2-7 4 14 2-7h7"/></svg></div>
+          <div class="aiic" id="ai3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="aiic" id="ai4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg></div>
+        </div>
+        <div class="progressbar"><i id="progFill"></i></div>
+        <div class="analyzestatus" id="analyzeStatus">Reading vehicle profile…</div>
+      </div>
+    </section>
+
+    <!-- STEP 4: Diagnosis result -->
+    <section class="screen" id="s4">
+      <div class="eyebrow">DIAGNOSIS RESULT</div>
+      <h1 class="title">Here's what AutoSense found</h1>
+
+      <div class="resulthead">
+        <div class="veh" id="resVeh">2019 Honda City · 42,000 km</div>
+        <div class="cause" id="resCause">Worn brake pads</div>
+        <div class="badgerow">
+          <span class="badge" id="resPriorityBadge"><i class="dot"></i><span id="resPriorityText">High priority</span></span>
+          <span class="badge low"><i class="dot"></i>AI preliminary estimate</span>
+        </div>
+      </div>
+
+      <div class="resultgrid">
+        <div class="stat">
+          <div class="k">Confidence</div>
+          <div class="confwrap"><div class="confbar"><i id="confFill"></i></div><div class="confnum" id="confNum">0%</div></div>
+        </div>
+        <div class="stat">
+          <div class="k">Estimated repair cost</div>
+          <div class="costnum" id="resCost">₹1,500 – ₹4,000</div>
+        </div>
+        <div class="stat" style="grid-column:1/-1">
+          <div class="k">Likely affected components</div>
+          <div class="complist" id="resComponents"></div>
+        </div>
+      </div>
+
+      <div class="note" id="resNote">Uploaded image and audio increased confidence — the model weighs all available evidence together.</div>
+
+      <div class="btnrow">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Refine symptoms</button>
+        <button class="btn btn-primary" onclick="goStep(5)">Find a mechanic →</button>
+      </div>
+    </section>
+
+    <!-- STEP 5: Find mechanic -->
+    <section class="screen" id="s5">
+      <div class="eyebrow">NEARBY HELP</div>
+      <h1 class="title">Mechanics who handle this</h1>
+      <p class="lede">Matched to the affected components from your diagnosis.</p>
+      <div class="card" style="padding:6px 20px;">
+        <div class="mech">
+          <div class="av">SP</div>
+          <div class="info">
+            <div class="name">Sri Auto Care</div>
+            <div class="meta">2.1 km away · 4.7★ (312 reviews)</div>
+            <div class="tags"><span class="tag">Brake specialist</span><span class="tag">Same-day slot</span></div>
+          </div>
+          <button class="btn btn-teal cta" onclick="selectMechanic('Sri Auto Care')">Contact</button>
+        </div>
+        <div class="mech">
+          <div class="av">TM</div>
+          <div class="info">
+            <div class="name">Torque &amp; Main Garage</div>
+            <div class="meta">3.4 km away · 4.5★ (198 reviews)</div>
+            <div class="tags"><span class="tag">Multi-brand</span><span class="tag">Pickup available</span></div>
+          </div>
+          <button class="btn btn-teal cta" onclick="selectMechanic('Torque & Main Garage')">Contact</button>
+        </div>
+        <div class="mech">
+          <div class="av">RB</div>
+          <div class="info">
+            <div class="name">RB Motor Works</div>
+            <div class="meta">5.0 km away · 4.6★ (127 reviews)</div>
+            <div class="tags"><span class="tag">Certified</span><span class="tag">Warranty on parts</span></div>
+          </div>
+          <button class="btn btn-teal cta" onclick="selectMechanic('RB Motor Works')">Contact</button>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button class="btn btn-ghost" onclick="goStep(4)">← Back to diagnosis</button>
+        <button class="btn btn-primary" onclick="goStep(6)" id="toHistory" disabled>Mark repair complete →</button>
+      </div>
+    </section>
+
+    <!-- STEP 6: History + reminder -->
+    <section class="screen" id="s6">
+      <div class="eyebrow">SAVED TO VEHICLE RECORD</div>
+      <h1 class="title">Repair history updated</h1>
+      <p class="lede">Every completed repair sharpens future diagnoses for this vehicle.</p>
+      <div class="card">
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="reminder">
+        <div class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        <div class="txt"><b>Next service reminder set</b><span id="reminderText">Oil &amp; filter change due in ~2,000 km</span></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn btn-ghost" onclick="resetDemo()">↺ Restart demo</button>
+      </div>
+      <div class="disclaimer">AI supports diagnosis — it never replaces a qualified mechanic.</div>
+    </section>
+
+  </main>
+</div>
+
+<div class="prototypebadge">Prototype demo · not connected to a live model — <b>AutoSense</b></div>
+
+<script>
+const stepNames = ["Vehicle details","Describe symptoms","AI analysis","Diagnosis result","Find a mechanic","Repair history"];
+let current = 1;
+let diagnosis = null;
+
+function buildStepper(){
+  const wrap = document.getElementById('stepper');
+  wrap.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const seg = document.createElement('div');
+    seg.className='seg';
+    seg.innerHTML = '<i id="seg'+i+'"></i>';
+    wrap.appendChild(seg);
+  }
+}
+buildStepper();
+
+function updateStepperUI(){
+  for(let i=0;i<6;i++){
+    document.getElementById('seg'+i).style.width = (i < current) ? '100%' : '0%';
+  }
+  document.getElementById('stepNum').textContent = current;
+  document.getElementById('stepName').textContent = stepNames[current-1];
+}
+
+function goStep(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  current = n;
+  updateStepperUI();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(n===6){ populateHistory(); }
+}
+updateStepperUI();
+
+function handleFile(input, tileId, nameId){
+  const tile = document.getElementById(tileId);
+  const nameEl = document.getElementById(nameId);
+  if(input.files && input.files[0]){
+    tile.classList.add('filled');
+    nameEl.textContent = input.files[0].name;
+  } else {
+    tile.classList.remove('filled');
+    nameEl.textContent = '';
+  }
+}
+
+const rules = [
+  {kw:['squeal','screech'], cause:'Worn front brake pads', components:['Brake pads','Rotors'], priority:'high', baseConf:84, cost:'₹1,500 – ₹4,000'},
+  {kw:['grind','grinding'], cause:'Brake pads worn to metal backing', components:['Brake pads','Rotors','Calipers'], priority:'high', baseConf:89, cost:'₹3,000 – ₹7,500'},
+  {kw:['knock','knocking'], cause:'Worn suspension bushing or low engine oil pressure', components:['Suspension','Engine mounts'], priority:'medium', baseConf:71, cost:'₹2,000 – ₹6,000'},
+  {kw:['click','ticking'], cause:'CV joint wear on the drive axle', components:['CV joint','Drive axle boot'], priority:'medium', baseConf:76, cost:'₹2,500 – ₹5,500'},
+  {kw:['hum','whine','whirring'], cause:'Wheel bearing wear', components:['Wheel bearing','Hub assembly'], priority:'medium', baseConf:69, cost:'₹1,800 – ₹4,500'},
+  {kw:['vibrat','shake','shaking'], cause:'Wheel imbalance or misalignment', components:['Wheels','Alignment'], priority:'low', baseConf:63, cost:'₹500 – ₹2,000'},
+  {kw:['smoke','smell','burning','overheat'], cause:'Overheating clutch or an electrical short', components:['Clutch assembly','Wiring harness'], priority:'high', baseConf:80, cost:'₹2,000 – ₹8,000'},
+  {kw:['leak','oil spot','dripping'], cause:'Engine oil or coolant seal leak', components:['Oil pan gasket','Coolant hose'], priority:'medium', baseConf:73, cost:'₹1,200 – ₹3,500'},
+  {kw:['warning light','check engine','dashboard'], cause:'Sensor fault flagged by the onboard system', components:['O2 sensor','ECU wiring'], priority:'medium', baseConf:66, cost:'₹800 – ₹3,000'},
+];
+const fallback = {cause:'Early-stage brake wear indicated by mixed signals', components:['Brake pads','Suspension'], priority:'low', baseConf:58, cost:'₹800 – ₹2,500'};
+
+function diagnose(text, hasImg, hasSnd){
+  text = (text||'').toLowerCase();
+  let match = rules.find(r => r.kw.some(k => text.includes(k)));
+  if(!match) match = fallback;
+  let conf = match.baseConf;
+  if(hasImg) conf += 5;
+  if(hasSnd) conf += 4;
+  conf = Math.min(conf, 97);
+  return {...match, confidence: conf};
+}
+
+function startAnalysis(){
+  const symptom = document.getElementById('vSymptom').value.trim();
+  const hasImg = document.getElementById('imgTile').classList.contains('filled');
+  const hasSnd = document.getElementById('sndTile').classList.contains('filled');
+  diagnosis = diagnose(symptom, hasImg, hasSnd);
+
+  goStep(3);
+  const stages = [
+    {t:400, msg:'Reading vehicle profile…', ic:null},
+    {t:900, msg:'Scanning uploaded image…', ic:'ai1'},
+    {t:1500, msg:'Classifying the sound…', ic:'ai2'},
+    {t:2100, msg:'Parsing symptom description…', ic:'ai3'},
+    {t:2700, msg:'Cross-checking repair history…', ic:'ai4'},
+    {t:3200, msg:'Finalizing diagnosis…', ic:null},
+  ];
+  document.querySelectorAll('.aiic').forEach(el=>el.classList.remove('on'));
+  const statusEl = document.getElementById('analyzeStatus');
+  const fill = document.getElementById('progFill');
+  fill.style.width='0%';
+  stages.forEach((st,i)=>{
+    setTimeout(()=>{
+      statusEl.textContent = st.msg;
+      fill.style.width = Math.round(((i+1)/stages.length)*100)+'%';
+      if(st.ic) document.getElementById(st.ic).classList.add('on');
+    }, st.t);
+  });
+  setTimeout(()=>{ renderResult(); goStep(4); }, 3600);
+}
+
+function renderResult(){
+  const make = document.getElementById('vMake').value || 'Your';
+  const model = document.getElementById('vModel').value || 'vehicle';
+  const year = document.getElementById('vYear').value || '';
+  const km = document.getElementById('vKm').value;
+  document.getElementById('resVeh').textContent = [year, make, model].filter(Boolean).join(' ') + (km ? ' · '+Number(km).toLocaleString()+' km' : '');
+  document.getElementById('resCause').textContent = diagnosis.cause;
+  document.getElementById('resCost').textContent = diagnosis.cost;
+
+  const pBadge = document.getElementById('resPriorityBadge');
+  const pText = document.getElementById('resPriorityText');
+  pBadge.className = 'badge ' + diagnosis.priority;
+  const labels = {high:'High priority — attend soon', medium:'Medium priority', low:'Low priority — monitor'};
+  pText.textContent = labels[diagnosis.priority];
+
+  document.getElementById('confNum').textContent = diagnosis.confidence + '%';
+  setTimeout(()=>{ document.getElementById('confFill').style.width = diagnosis.confidence + '%'; }, 100);
+
+  const compWrap = document.getElementById('resComponents');
+  compWrap.innerHTML = '';
+  diagnosis.components.forEach(c=>{
+    const chip = document.createElement('span');
+    chip.className='chip'; chip.textContent=c;
+    compWrap.appendChild(chip);
+  });
+
+  const hasImg = document.getElementById('imgTile').classList.contains('filled');
+  const hasSnd = document.getElementById('sndTile').classList.contains('filled');
+  const noteEl = document.getElementById('resNote');
+  if(hasImg || hasSnd){
+    noteEl.textContent = 'Uploaded ' + [hasImg&&'image', hasSnd&&'audio'].filter(Boolean).join(' and ') + ' contributed to this confidence score, alongside the written description.';
+  } else {
+    noteEl.textContent = 'Based on the description alone — adding a photo or sound clip usually raises confidence.';
+  }
+}
+
+let mechanicChosen = false;
+function selectMechanic(name){
+  mechanicChosen = true;
+  document.getElementById('toHistory').disabled = false;
+  event.target.textContent = 'Requested ✓';
+  event.target.disabled = true;
+}
+
+function populateHistory(){
+  const make = document.getElementById('vMake').value || 'Vehicle';
+  const model = document.getElementById('vModel').value || '';
+  const tl = document.getElementById('timeline');
+  const today = new Date();
+  const fmt = d => d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  const past1 = new Date(today); past1.setMonth(past1.getMonth()-4);
+  const past2 = new Date(today); past2.setMonth(past2.getMonth()-9);
+
+  tl.innerHTML = `
+    <div class="tlitem">
+      <div class="d">${fmt(today)} · Today</div>
+      <div class="t">${diagnosis.cause} — resolved</div>
+      <div class="s">Components: ${diagnosis.components.join(', ')} · Est. cost ${diagnosis.cost}</div>
+    </div>
+    <div class="tlitem">
+      <div class="d">${fmt(past1)}</div>
+      <div class="t">Routine oil &amp; filter change</div>
+      <div class="s">${make} ${model} · Scheduled maintenance</div>
+    </div>
+    <div class="tlitem">
+      <div class="d">${fmt(past2)}</div>
+      <div class="t">Battery replacement</div>
+      <div class="s">${make} ${model} · Flagged by low cold-start voltage</div>
+    </div>
+  `;
+}
+
+function resetDemo(){
+  document.getElementById('vMake').value='';
+  document.getElementById('vModel').value='';
+  document.getElementById('vYear').value='';
+  document.getElementById('vKm').value='';
+  document.getElementById('vSymptom').value='';
+  ['imgTile','sndTile'].forEach(id=>{
+    document.getElementById(id).classList.remove('filled');
+  });
+  document.getElementById('imgName').textContent='';
+  document.getElementById('sndName').textContent='';
+  mechanicChosen = false;
+  document.getElementById('toHistory').disabled = true;
+  document.querySelectorAll('.mech .cta').forEach(b=>{b.disabled=false; b.textContent='Contact';});
+  goStep(1);
+}
+</script>
+</body>
+</html>
