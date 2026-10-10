@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoSense – Diagnose. Remember. Find help.</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><strong>AutoSense</strong><span>Diagnose. Remember. Find help.</span></header>
+<main>
+  <section class="hero">
+    <h1>What is your vehicle telling you?</h1>
+    <p>Describe the problem, add a photo or a sound clip, and get a likely cause, urgency and cost range in plain language.</p>
+  </section>
+
+  <section class="panel">
+    <h2>1. Vehicle details</h2>
+    <div class="grid">
+      <label>Make &amp; model<input id="model" placeholder="e.g. Maruti Swift"></label>
+      <label>Year<input id="year" type="number" placeholder="2019"></label>
+      <label>Odometer (km)<input id="km" type="number" placeholder="42000"></label>
+      <label>Fuel<select id="fuel"><option>Petrol</option><option>Diesel</option><option>CNG</option><option>Electric</option></select></label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>2. Describe the problem</h2>
+    <label>Symptoms<textarea id="symptom" rows="3" placeholder="e.g. grinding noise when I press the brake, steering pulls left"></textarea></label>
+    <div class="grid">
+      <label>Photo (optional)<input id="img" type="file" accept="image/*"></label>
+      <label>Sound clip (optional)<input id="aud" type="file" accept="audio/*"></label>
+    </div>
+    <div id="preview"></div>
+    <button id="go">Analyse problem</button>
+  </section>
+
+  <section class="panel" id="result" hidden>
+    <h2>3. Diagnosis</h2>
+    <div id="out"></div>
+    <div class="row">
+      <button id="save">Save to history</button>
+      <a id="find" target="_blank" rel="noopener">Find mechanics nearby</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Service history &amp; reminders</h2>
+    <div class="grid">
+      <label>Last service date<input id="last" type="date"></label>
+      <label>Service interval (months)<input id="int" type="number" value="6"></label>
+    </div>
+    <p id="due" class="note"></p>
+    <ul id="hist"></ul>
+    <button id="clear" class="ghost">Clear history</button>
+  </section>
+</main>
+<footer>AI supports diagnosis – it never replaces a qualified mechanic.</footer>
+<script src="app.js"></script>
+</body>
+</html>
